@@ -1,225 +1,414 @@
 trigger: none
 
-jobs:
-- job: python36
-  displayName: python 3.6
-  pool:
-    vmImage: ubuntu-18.04
-  steps: 
-  - bash: |
-      # login
-      set -e
-      echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
+pool:
+  vmImage: ubuntu-18.04
 
-    displayName: login to registry
-    continueOnError: false
-    env:
-      pswd: $(dockerPassword)
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.6
+stages:
+- stage: prepare
+  jobs:
+  - job: fetchlatest
+    displayName: Check CoreTools Version
+    steps:
+      - bash: |
+          sudo npm i -g azure-functions-core-tools@3 --unsafe-perm true
+          func --version > $(Build.ArtifactStagingDirectory)/core-tools-version.txt
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'drop'
+          publishLocation: 'Container'
+- stage: build
+  jobs:
+  - job: dotnetcore3
+    displayName: DotNet Core 3
+    steps: 
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          itemPattern: 
+          downloadPath: '$(System.ArtifactsDirectory)'
+      - bash: |
+          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
+          echo "targetVersion: ${targetVersion}"
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"        
+      - bash: |
+          # login
+          set -e
+          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python36/python36.Dockerfile \
-                  host/3.0/buster/amd64/python/python36
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.6
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+        displayName: login to registry
+        continueOnError: false
+        env:
+          pswd: $(dockerPassword)
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.6-slim
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/dotnet:$(TargetVersion)-core-tools
+    
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/dotnet/dotnet-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/dotnet/
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: dotnet-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python36/python36-slim.Dockerfile \
-                  host/3.0/buster/amd64/python/python36/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.6-slim
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+  - job: java
+    displayName: Java
+    steps: 
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          itemPattern: 
+          downloadPath: '$(System.ArtifactsDirectory)'
+      - bash: |
+          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
+          echo "targetVersion: ${targetVersion}"
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+      - bash: |
+          # login
+          set -e
+          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.6-appservice
+        displayName: login to registry
+        continueOnError: false
+        env:
+          pswd: $(dockerPassword)
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/java:$(TargetVersion)-java8-core-tools
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/java/java8/java8-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/java/java8
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: java8-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/java:$(TargetVersion)-java11-core-tools
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/java/java11/java11-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/java/java11
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: java11-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python36/python36-appservice.Dockerfile \
-                  host/3.0/buster/amd64/python/python36/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.6-appservice
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+  - job: node
+    displayName: Node
+    steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          itemPattern: 
+          downloadPath: '$(System.ArtifactsDirectory)'
+      - bash: |
+          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
+          echo "targetVersion: ${targetVersion}"
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+      - bash: |
+          # login
+          set -e
+          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.6-buildenv
+        displayName: login to registry
+        continueOnError: false
+        env:
+          pswd: $(dockerPassword)
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/node:$(TargetVersion)-node10-core-tools
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python36/python36-buildenv.Dockerfile \
-                  host/3.0/buster/amd64/python/python36/
-      docker push $IMAGE_NAME
-    displayName: python3.6-buildenv
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/node/node10/node10-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/node/node10/
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: node10-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/node:$(TargetVersion)-node12-core-tools
 
-- job: python37
-  displayName: python 3.7
-  pool:
-    vmImage: ubuntu-18.04
-  steps:
-  - bash: |
-      # login
-      set -e
-      echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/node/node12/node12-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/node/node12/
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: node12-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1
 
-    displayName: login to registry
-    continueOnError: false
-    env:
-      pswd: $(dockerPassword)
+  - job: python
+    displayName: python
+    steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          itemPattern: 
+          downloadPath: '$(System.ArtifactsDirectory)'
+      - bash: |
+          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
+          echo "targetVersion: ${targetVersion}"
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+      - bash: |
+          set -e
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(TargetVersion)-python3.8-core-tools
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.7
+          docker build -t $IMAGE_NAME \
+                      -f host/3.0/buster/amd64/python/python38/python38-core-tools.Dockerfile \
+                      host/3.0/buster/amd64/python/python38/
+          npm run test $IMAGE_NAME --prefix  test/
+          docker push $IMAGE_NAME
+        displayName: python3.8-core-tools
+        continueOnError: false
+        env:
+          DOCKER_BUILDKIT: 1      
+- stage: publish
+  jobs:
+  - job: fetchlatest
+    displayName: Check CoreTools Version
+    steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          itemPattern: 
+          downloadPath: '$(System.ArtifactsDirectory)'
+      - bash: |
+          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
+          echo "targetVersion: ${targetVersion}"
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"       
+      - bash: |
+          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
+        displayName: login
+        continueOnError: false
+        env:
+          pswd: $(dockerPassword)
+    
+      - bash: |
+          set -e
+          SOURCE_REGISTRY=azurefunctions.azurecr.io/azure-functions/3.0
+          TARGET_REGISTRY=azurefunctions.azurecr.io/public/azure-functions
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python37/python37.Dockerfile \
-                  host/3.0/buster/amd64/python/python37
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.7
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+          MAJOR_VERSION=3.0
+    
+          if [ -z "$(TargetVersion)" ]; then
+            echo "ERROR: TargetVersion is required"
+            exit 1
+          fi
+    
+          echo "##vso[task.setvariable variable=MajorVersion]$MAJOR_VERSION"    
+          echo "##vso[task.setvariable variable=SOURCE_REGISTRY]$SOURCE_REGISTRY"
+          echo "##vso[task.setvariable variable=TARGET_REGISTRY]$TARGET_REGISTRY"
+        displayName: set env
+        continueOnError: false
+    
+      - bash: |
+          set -e
+          docker pull $SOURCE_REGISTRY/dotnet:$(TargetVersion)-core-tools
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.7-slim
+          docker tag $SOURCE_REGISTRY/dotnet:$(TargetVersion)-core-tools $TARGET_REGISTRY/dotnet:$(TargetVersion)-dotnet3-core-tools
+          docker tag $SOURCE_REGISTRY/dotnet:$(TargetVersion)-core-tools $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools  
+          
+        displayName: tag dotnet images
+        continueOnError: false
+      - bash: |
+          set -e 
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/dotnet:$(TargetVersion)-dotnet3-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          ActualVersion=`docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi
+          docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools az --help
+        displayName: test dotnet images
+        continueOnError: false
+      - bash: |
+          set -e 
+          docker push $TARGET_REGISTRY/dotnet:$(TargetVersion)-dotnet3-core-tools
+          docker push $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools
+          docker system prune -a -f
+        displayName: push dotnet images
+        continueOnError: false
+        enabled: false
+        
+      - bash: |
+          set -e
+          docker pull $SOURCE_REGISTRY/java:$(TargetVersion)-java8-core-tools
+          docker pull $SOURCE_REGISTRY/java:$(TargetVersion)-java11-core-tools
+    
+          docker tag $SOURCE_REGISTRY/java:$(TargetVersion)-java8-core-tools $TARGET_REGISTRY/java:$(TargetVersion)-java8-core-tools
+          docker tag $SOURCE_REGISTRY/java:$(TargetVersion)-java11-core-tools $TARGET_REGISTRY/java:$(TargetVersion)-java11-core-tools
+  
+          docker tag $SOURCE_REGISTRY/java:$(TargetVersion)-java8-core-tools $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools
+          docker tag $SOURCE_REGISTRY/java:$(TargetVersion)-java11-core-tools $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools  
+    
+        displayName: tag java images
+        continueOnError: false
+      - bash: |
+          set -e 
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/java:$(TargetVersion)-java8-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/java:$(TargetVersion)-java11-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python37/python37-slim.Dockerfile \
-                  host/3.0/buster/amd64/python/python37/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.7-slim
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+          ActualVersion=`docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi
+          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools az --help
+          ActualVersion=`docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi
+          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools az --help
+        displayName: test java images
+        continueOnError: false
+      - bash: |
+          set -e
+          docker push $TARGET_REGISTRY/java:$(TargetVersion)-java8-core-tools
+          docker push $TARGET_REGISTRY/java:$(TargetVersion)-java11-core-tools
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.7-appservice
+          docker push $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools
+          docker push $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools
+    
+          docker system prune -a -f
+        displayName: push java images
+        continueOnError: false
+        enabled: false
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python37/python37-appservice.Dockerfile \
-                  host/3.0/buster/amd64/python/python37/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.7-appservice
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+      - bash: |
+          set -e
+          docker pull $SOURCE_REGISTRY/node:$(TargetVersion)-node10-core-tools
+          docker pull $SOURCE_REGISTRY/node:$(TargetVersion)-node12-core-tools
+    
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node10-core-tools $TARGET_REGISTRY/node:$(TargetVersion)-core-tools   
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node10-core-tools $TARGET_REGISTRY/node:$(TargetVersion)-node10-core-tools
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node12-core-tools $TARGET_REGISTRY/node:$(TargetVersion)-node12-core-tools
+             
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node10-core-tools $TARGET_REGISTRY/node:$(MajorVersion)-core-tools   
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node10-core-tools $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools
+          docker tag $SOURCE_REGISTRY/node:$(TargetVersion)-node12-core-tools $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.7-buildenv
+        displayName: tag node images
+        continueOnError: false
+      - bash: |
+          set -e 
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/node:$(TargetVersion)-node10-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/node:$(TargetVersion)-node12-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/node:$(TargetVersion)-node10-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/node:$(MajorVersion)-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          ActualVersion=`docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi
+          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools az --help
+          ActualVersion=`docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi          
+          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools az --help
+        displayName: test node images
+        continueOnError: false        
+      - bash: |
+          set -e
+          docker push $TARGET_REGISTRY/node:$(TargetVersion)-core-tools
+          docker push $TARGET_REGISTRY/node:$(TargetVersion)-node10-core-tools
+          docker push $TARGET_REGISTRY/node:$(TargetVersion)-node12-core-tools
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python37/python37-buildenv.Dockerfile \
-                  host/3.0/buster/amd64/python/python37/
-      docker push $IMAGE_NAME
-    displayName: python3.7-buildenv
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+          docker push $TARGET_REGISTRY/node:$(MajorVersion)-core-tools
+          docker push $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools
+          docker push $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools
+    
+          docker system prune -a -f
+        displayName: push node images
+        continueOnError: false
+        enabled: false
+      - bash: |
+          set -e
+          docker pull $SOURCE_REGISTRY/python:$(TargetVersion)-python3.8-core-tools
+    
+          docker tag $SOURCE_REGISTRY/python:$(TargetVersion)-python3.8-core-tools $TARGET_REGISTRY/python:$(TargetVersion)-python3.8-core-tools
+ 
+          docker tag $SOURCE_REGISTRY/python:$(TargetVersion)-python3.8-core-tools $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools
 
-- job: python38
-  displayName: python 3.8
-  pool:
-    vmImage: ubuntu-18.04
-  steps:
-  - bash: |
-      # login
-      set -e
-      echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
+        displayName: tag python images
+        continueOnError: false
 
-    displayName: login to registry
-    continueOnError: false
-    env:
-      pswd: $(dockerPassword)
+      - bash: |
+          set -e 
+          TargetImageId=`docker image inspect $TARGET_REGISTRY/python:$(TargetVersion)-python3.8-core-tools --format='{{.Id}}'`
+          MajorImageId=`docker image inspect $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools --format='{{.Id}}'`
+          if [[ "$TargetImageId" != "$MajorImageId" ]]; then
+            echo "unmatch the Target image id and Major image id ${TargetImageId} and ${MajorImageId}";
+            exit 1;
+          fi
+          ActualVersion=`docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools func --version`
+          if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
+            echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
+            exit 1;
+          fi
+          docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools --help
+        displayName: test python images
+        continueOnError: false
 
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.8
+      - bash: |
+          set -e
+          docker push $TARGET_REGISTRY/python:$(TargetVersion)-python3.8-core-tools
+          docker push $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools
 
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python38/python38.Dockerfile \
-                  host/3.0/buster/amd64/python/python38
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.8
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
-
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.8-slim
-
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python38/python38-slim.Dockerfile \
-                  host/3.0/buster/amd64/python/python38/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.8-slim
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
-
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.8-appservice
-
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python38/python38-appservice.Dockerfile \
-                  host/3.0/buster/amd64/python/python38/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.8-appservice
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
-
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.8-buildenv
-
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python38/python38-buildenv.Dockerfile \
-                  host/3.0/buster/amd64/python/python38/
-      docker push $IMAGE_NAME
-    displayName: python3.8-buildenv
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
-
-  - bash: |
-      set -e
-      IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(Build.SourceBranchName)-python3.8-core-tools
-
-      docker build -t $IMAGE_NAME \
-                  -f host/3.0/buster/amd64/python/python38/python38-core-tools.Dockerfile \
-                  host/3.0/buster/amd64/python/python38/
-      npm run test $IMAGE_NAME --prefix  test/
-      docker push $IMAGE_NAME
-    displayName: python3.8-core-tools
-    continueOnError: false
-    env:
-      DOCKER_BUILDKIT: 1
+          docker system prune -a -f
+        displayName: push python images
+        continueOnError: false
+        enabled: false
