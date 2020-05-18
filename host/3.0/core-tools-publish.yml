@@ -32,7 +32,8 @@ stages:
       - bash: |
           targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
           echo "targetVersion: ${targetVersion}"
-          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"        
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"
+        displayName: share the targetVersion
       - bash: |
           # login
           set -e
@@ -70,7 +71,8 @@ stages:
       - bash: |
           targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
           echo "targetVersion: ${targetVersion}"
-          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"
+        displayName: share the targetVersion
       - bash: |
           # login
           set -e
@@ -118,7 +120,8 @@ stages:
       - bash: |
           targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
           echo "targetVersion: ${targetVersion}"
-          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"
+        displayName: share the targetVersion 
       - bash: |
           # login
           set -e
@@ -168,7 +171,17 @@ stages:
       - bash: |
           targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
           echo "targetVersion: ${targetVersion}"
-          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"   
+          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"
+        displayName: share the targetVersion
+      - bash: |
+          # login
+          set -e
+          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
+
+        displayName: login to registry
+        continueOnError: false
+        env:
+          pswd: $(dockerPassword)           
       - bash: |
           set -e
           IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/python:$(TargetVersion)-python3.8-core-tools
@@ -375,26 +388,6 @@ stages:
         displayName: push node images
         continueOnError: false
         enabled: false
-      - task: DownloadBuildArtifacts@0
-        inputs:
-          buildType: 'current'
-          downloadType: 'single'
-          artifactName: 'drop'
-          itemPattern: 
-          downloadPath: '$(System.ArtifactsDirectory)'
-      - bash: |
-          targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
-          echo "targetVersion: ${targetVersion}"
-          echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"        
-      - bash: |
-          # login
-          set -e
-          echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
-
-        displayName: login to registry
-        continueOnError: false
-        env:
-          pswd: $(dockerPassword)
       - bash: |
           set -e
           docker pull $SOURCE_REGISTRY/python:$(TargetVersion)-python3.8-core-tools
