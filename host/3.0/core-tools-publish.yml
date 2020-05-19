@@ -257,7 +257,7 @@ stages:
           ActualVersion=`docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1;  # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1; 
           fi
           docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools az --help
         displayName: test dotnet images
@@ -302,13 +302,13 @@ stages:
           ActualVersion=`docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1; # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1;
           fi
           docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools az --help
           ActualVersion=`docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1; # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1;
           fi
           docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools az --help
         displayName: test java images
@@ -364,13 +364,13 @@ stages:
           ActualVersion=`docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1; # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1;
           fi
           docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools az --help
           ActualVersion=`docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1; # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1;
           fi          
           docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools az --help
         displayName: test node images
@@ -411,7 +411,7 @@ stages:
           ActualVersion=`docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
-            # exit 1; # TODO Currently npm is faster than apt-get uncomment it after it syncronized.
+            exit 1;
           fi
           docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools --help
         displayName: test python images
