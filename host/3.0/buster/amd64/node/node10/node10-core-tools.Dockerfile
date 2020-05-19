@@ -39,7 +39,7 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* \
     # Install Azure Functions Core Tools
-    npm i -g azure-functions-core-tools@3 --unsafe-perm true
+    && npm i -g azure-functions-core-tools@3 --unsafe-perm true
 
 # Azure Functions Core Tools needs a place to save data
 ENV XDG_DATA_HOME=/home/$USERNAME/.local/share
