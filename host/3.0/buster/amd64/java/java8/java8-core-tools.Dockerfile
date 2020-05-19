@@ -48,7 +48,10 @@ RUN apt-get update \
     && echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list \
     && curl -sL https://packages.microsoft.com/keys/microsoft.asc | (OUT=$(apt-key add - 2>&1) || echo $OUT) \
     && apt-get update \
-    && apt-get install -y azure-cli dotnet-sdk-3.1 azure-functions-core-tools-3 \
+    && apt-get install -y azure-cli dotnet-sdk-3.1 \
+    && apt-get -y install nodejs npm \
+    # Install Azure Functions Core Tool
+    && npm i -g azure-functions-core-tools@3 --unsafe-perm true \
     #
     # Clean up
     && apt-get autoremove -y \
