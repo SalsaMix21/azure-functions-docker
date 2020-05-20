@@ -210,8 +210,8 @@ stages:
           DOCKER_BUILDKIT: 1      
 - stage: publish
   jobs:
-  - job: fetchlatest
-    displayName: Check CoreTools Version
+  - job: testandpublish
+    displayName: Test and Publish Images
     steps:
       - task: DownloadBuildArtifacts@0
         inputs:
