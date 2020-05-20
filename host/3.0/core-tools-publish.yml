@@ -300,7 +300,7 @@ stages:
           docker system prune -a -f
         displayName: push dotnet images
         continueOnError: false
-        enabled: false
+        condition: ne(variables['SkipProduction'], 'true')
         
       - bash: |
           set -e
@@ -355,7 +355,7 @@ stages:
           docker system prune -a -f
         displayName: push java images
         continueOnError: false
-        enabled: false
+        condition: ne(variables['SkipProduction'], 'true')
 
       - bash: |
           set -e
@@ -419,7 +419,7 @@ stages:
           docker system prune -a -f
         displayName: push node images
         continueOnError: false
-        enabled: false
+        condition: ne(variables['SkipProduction'], 'true')
       - bash: |
           set -e
           docker pull $SOURCE_REGISTRY/python:$(PrivateVersion)-python3.8-core-tools
@@ -456,4 +456,4 @@ stages:
           docker system prune -a -f
         displayName: push python images
         continueOnError: false
-        enabled: false
+        condition: ne(variables['SkipProduction'], 'true')
