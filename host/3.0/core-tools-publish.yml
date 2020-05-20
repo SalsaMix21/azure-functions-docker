@@ -365,7 +365,7 @@ stages:
             echo "unmatch the Target image id and Major image id ${PrivateImageId} and ${MajorImageId}";
             exit 1;
           fi
-          PrivateImageId=`docker image inspect $TSOURCE_REGISTRY/node:$(PrivateVersion)-node12-core-tools --format='{{.Id}}'`
+          PrivateImageId=`docker image inspect $SOURCE_REGISTRY/node:$(PrivateVersion)-node12-core-tools --format='{{.Id}}'`
           MajorImageId=`docker image inspect $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools --format='{{.Id}}'`
           if [[ "$PrivateImageId" != "$MajorImageId" ]]; then
             echo "unmatch the Target image id and Major image id ${PrivateImageId} and ${MajorImageId}";
