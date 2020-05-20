@@ -50,7 +50,7 @@ stages:
 
       - bash: |
           set -e
-          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/dotnet:$(PrivateVersion)-core-tools
+          IMAGE_NAME=azurefunctions.azurecr.io/azure-functions/3.0/dotnet:$(PrivateVersion)-dotnet3-core-tools
     
           docker build -t $IMAGE_NAME \
                       -f host/3.0/buster/amd64/dotnet/dotnet-core-tools.Dockerfile \
@@ -255,10 +255,10 @@ stages:
     
       - bash: |
           set -e
-          docker pull $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-core-tools
+          docker pull $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-dotnet3-core-tools
 
-          docker tag $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-core-tools $TARGET_REGISTRY/dotnet:$(TargetVersion)-dotnet3-core-tools
-          docker tag $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-core-tools $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools  
+          docker tag $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-dotnet3-core-tools $TARGET_REGISTRY/dotnet:$(TargetVersion)-dotnet3-core-tools
+          docker tag $SOURCE_REGISTRY/dotnet:$(PrivateVersion)-dotnet3-core-tools $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools  
           
         displayName: tag dotnet images
         continueOnError: false
