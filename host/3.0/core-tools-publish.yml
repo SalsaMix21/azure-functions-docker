@@ -1,4 +1,5 @@
 trigger: none
+pr: none 
 
 pool:
   vmImage: ubuntu-18.04
@@ -275,7 +276,7 @@ stages:
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1; 
           fi
-          docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools az --help
+          docker run $TARGET_REGISTRY/dotnet:$(MajorVersion)-dotnet3-core-tools az --version
         displayName: test dotnet images
         continueOnError: false
       - bash: |
@@ -320,13 +321,13 @@ stages:
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1;
           fi
-          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools az --help
+          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java8-core-tools az --version
           ActualVersion=`docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1;
           fi
-          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools az --help
+          docker run $TARGET_REGISTRY/java:$(MajorVersion)-java11-core-tools az --version
         displayName: test java images
         continueOnError: false
       - bash: |
@@ -382,13 +383,13 @@ stages:
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1;
           fi
-          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools az --help
+          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node10-core-tools az --version
           ActualVersion=`docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools func --version`
           if [[ "$ActualVersion" != "$(TargetVersion)" ]]; then
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1;
           fi          
-          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools az --help
+          docker run $TARGET_REGISTRY/node:$(MajorVersion)-node12-core-tools az --version
         displayName: test node images
         continueOnError: false        
       - bash: |
@@ -429,7 +430,7 @@ stages:
             echo "unmatch the ActualVersion and TargetVersion ${ActualVersion} and $(TargetVersion)";
             exit 1;
           fi
-          docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools az --help
+          docker run $TARGET_REGISTRY/python:$(MajorVersion)-python3.8-core-tools az --version
         displayName: test python images
         continueOnError: false
 
