@@ -48,10 +48,7 @@ RUN apt-get update \
     && chown root:root /etc/apt/sources.list.d/microsoft-prod.list \
     && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/azure-cli.list \
     && apt-get update \
-    && apt-get -y install azure-cli \
-    && apt-get -y install nodejs npm \
-    # Install Azure Functions Core Tool
-    && npm i -g azure-functions-core-tools@3 --unsafe-perm true \
+    && apt-get -y install azure-cli azure-functions-core-tools-3 \
     #
     # Clean up
     && apt-get autoremove -y \
