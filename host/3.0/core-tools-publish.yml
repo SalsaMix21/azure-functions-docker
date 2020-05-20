@@ -6,6 +6,7 @@ pool:
 
 stages:
 - stage: prepare
+  condition: eq(variables['PublishPrivateVersion'], '')
   jobs:
   - job: fetchlatest
     displayName: Check CoreTools Version
@@ -20,6 +21,7 @@ stages:
           ArtifactName: 'drop'
           publishLocation: 'Container'
 - stage: build
+  condition: eq(variables['PublishPrivateVersion'], '')
   jobs:
   - job: dotnetcore3
     displayName: DotNet Core 3
@@ -210,6 +212,7 @@ stages:
         env:
           DOCKER_BUILDKIT: 1      
 - stage: publish
+  condition: ne(variables['BuildOnly'], 'true')
   jobs:
   - job: testandpublish
     displayName: Test and Publish Images
@@ -224,11 +227,16 @@ stages:
       - bash: |
           targetVersion=`cat $(System.ArtifactsDirectory)/drop/core-tools-version.txt`
           privateVersion=${targetVersion}.`cat $(System.ArtifactsDirectory)/drop/week.txt`
+          if [[ ! -z "${publishPrivateVersion}" ]]; then
+            privateVersion="${publishPrivateVersion}"
+          fi
           echo "targetVersion: ${targetVersion}"
           echo "##vso[task.setvariable variable=TargetVersion;]${targetVersion}"
           echo "privateVersion: ${privateVersion}"
           echo "##vso[task.setvariable variable=PrivateVersion;]${privateVersion}"
         displayName: share the targetVersion and PrivateVersion
+        env:
+          publishPrivateVersion: $(PublishPrivateVersion)
       - bash: |
           echo $pswd | docker login -u $(dockerUsername) --password-stdin azurefunctions.azurecr.io
         displayName: login
